@@ -1,8 +1,15 @@
+import argparse
 import json
 import io
 import zipfile
 import subprocess
 import boto3
+
+parser = argparse.ArgumentParser(
+    prog='deploy_app.py',
+    description='deploys the app to aws/localstack'
+)
+parser.add_argument('-s', '--serverless', action='store_true')
 
 # aws related
 REGION = "eu-central-1"
@@ -26,7 +33,7 @@ LAMBDA_NAME = "MnistHandlerLambda"
 WEBSITE_BUCKET_NAME = "mnist-website"
 
 
-def create_sagemaker_endpoint():
+def create_sagemaker_endpoint(serverless: bool):
     # create s3 bucket for model hosting
     s3 = boto3.client("s3", **AWS_CONFIG)
     s3.create_bucket(
@@ -97,18 +104,26 @@ def create_sagemaker_endpoint():
         ExecutionRoleArn=sagemaker_role["Role"]["Arn"],
     )
 
+    if serverless:
+        production_variant = {
+            "VariantName": "single-variant",
+            "ModelName": MNIST_MODEL_NAME,
+            "ServerlessConfig": {
+                "MemorySizeInMB": 6144,
+                "MaxConcurrency": 8,
+            },
+        }
+    else:
+        production_variant = {
+            "VariantName": "single-variant",
+            "ModelName": MNIST_MODEL_NAME,
+            "InitialInstanceCount": 1,
+            "InstanceType": "ml.m5.large"
+        }
+
     sm.create_endpoint_config(
         EndpointConfigName=MNIST_EP_CONFIGURATION_NAME,
-        ProductionVariants=[
-            {
-                "VariantName": "single-variant",
-                "ModelName": MNIST_MODEL_NAME,
-                "ServerlessConfig": {
-                    "MemorySizeInMB": 6144,
-                    "MaxConcurrency": 8,
-                },
-            },
-        ],
+        ProductionVariants=[production_variant],
     )
 
     sm.create_endpoint(
@@ -208,7 +223,8 @@ def host_website():
 
 
 def main():
-    create_sagemaker_endpoint()
+    args = parser.parse_args()
+    create_sagemaker_endpoint(serverless=args.serverless)
 
     lambdaUrl = create_lambda()
 

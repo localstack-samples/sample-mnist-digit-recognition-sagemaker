@@ -54,7 +54,7 @@ function App() {
     );
   };
 
-  const guessNumber = async () => {
+  const predictNumber = async () => {
     setLoading(true);
 
     const endpoint = process.env.REACT_APP_LAMBDA_URL;
@@ -107,10 +107,10 @@ function App() {
               <Flex width={"100%"} justifyContent={"space-around"}>
                 <Button onClick={clearCanvas}>Clear</Button>
                 <Button
-                  onClick={guessNumber}
+                  onClick={predictNumber}
                   style={{ color: "white", backgroundColor: "#39227a" }}
                 >
-                  Guess
+                  Predict
                 </Button>
               </Flex>
             </CardFooter>

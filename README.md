@@ -1,4 +1,4 @@
-# MNIST handwritten digit recognition model running on a local serverless SageMaker endpoint
+# MNIST handwritten digit recognition model running on a local SageMaker endpoint
 
 | Key          | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 |--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -18,11 +18,11 @@ Request handling is performed by a Lambda function, accessible via a function UR
 Here's a short summary of AWS service features we use:
 * S3 website
 * Lambda function URLs
-* SageMaker serverless endpoint
+* SageMaker endpoint
 
 Here's the web application in action:
 
-https://user-images.githubusercontent.com/39307517/234326469-7b8b1003-7991-4f28-b465-39653bb47da7.mov
+https://user-images.githubusercontent.com/39307517/234888629-4bd9deb8-ecdd-46a6-91d6-908b9f2a443c.mov
 
 ## Architecture overview
 
@@ -78,8 +78,17 @@ Finally, the script will build the web application and then create a s3 website 
 
 Once deployed, visit http://mnist-website.s3-website.localhost.localstack.cloud:4566
 
-Draw something in the canvas and click on "Guess".
+Draw something in the canvas and click on the button that says `Predict`.
 
 After a few moments the resulting prediction should be displayed in the box to the right.
 
 ![Demo Picture](/assets/demo-pic.png?raw=True "Demo Picture")
+
+
+## Serverless SageMaker Endpoint
+
+To switch to a serverless SageMaker endpoint you can also execute the deployment script with the additional `-s` or `--serverless` flag:
+
+```bash
+python deploy/deploy_app.py --serverless
+```
