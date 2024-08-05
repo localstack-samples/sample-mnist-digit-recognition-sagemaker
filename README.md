@@ -59,10 +59,10 @@ docker pull 763104351884.dkr.ecr.eu-central-1.amazonaws.com/pytorch-inference:1.
 
 ### LocalStack
 
-Start LocalStack Pro with your API key:
+Start LocalStack Pro with your Auth Token:
 
 ```bash
-PERSISTENCE=1 LOCALSTACK_API_KEY=... localstack start
+PERSISTENCE=1 LOCALSTACK_AUTH_TOKEN=... localstack start
 ```
 
 ## Instructions
