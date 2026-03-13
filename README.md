@@ -31,6 +31,9 @@ https://user-images.githubusercontent.com/39307517/234888629-4bd9deb8-ecdd-46a6-
 
 ## Prerequisites
 
+- A valid [LocalStack for AWS license](https://localstack.cloud/pricing). Your license provides a [`LOCALSTACK_AUTH_TOKEN`](https://docs.localstack.cloud/getting-started/auth-token/) to activate LocalStack.
+- [`localstack` CLI](https://docs.localstack.cloud/getting-started/installation/#localstack-cli).
+
 ### Dev environment
 
 Create a virtualenv and install all the development dependencies there:
@@ -59,10 +62,12 @@ docker pull 763104351884.dkr.ecr.eu-central-1.amazonaws.com/pytorch-inference:1.
 
 ### LocalStack
 
-Start LocalStack Pro with your Auth Token:
+Start LocalStack with the `LOCALSTACK_AUTH_TOKEN` pre-configured:
 
 ```bash
-PERSISTENCE=1 LOCALSTACK_AUTH_TOKEN=... localstack start
+export LOCALSTACK_AUTH_TOKEN=<your-auth-token>
+make start
+make ready
 ```
 
 ## Instructions
