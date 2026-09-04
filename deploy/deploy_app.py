@@ -205,7 +205,7 @@ def host_website():
     s3.put_bucket_policy(Bucket=WEBSITE_BUCKET_NAME, Policy=json.dumps(policy))
 
     # Upload the website files to the bucket
-    subprocess.run(f"awslocal s3 sync web/build s3://{WEBSITE_BUCKET_NAME}", shell=True)
+    subprocess.run(f"lstk aws s3 sync web/build s3://{WEBSITE_BUCKET_NAME}", shell=True)
 
     # Enable static website hosting for the bucket
     s3.put_bucket_website(
