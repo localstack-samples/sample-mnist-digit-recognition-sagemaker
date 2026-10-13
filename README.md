@@ -53,13 +53,16 @@ pip install -r ml/requirements.txt
 
 You'll also need npm/node installed to build the web application. Please install according to official guidelines: https://github.com/nvm-sh/nvm
 
-### Download pytorch container image
-As our inference container, we use the PyTorch inference container from the AWS ECR.
+### Download the PyTorch inference image
+As our inference container, we use the AWS Deep Learning Container for PyTorch inference (2.5.1, CPU).
+It is several gigabytes, so pull it before deploying.
+AWS also publishes it on ECR Public, which needs no login:
 
 ```bash
-aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.eu-central-1.amazonaws.com
-docker pull 763104351884.dkr.ecr.eu-central-1.amazonaws.com/pytorch-inference:1.10.2-cpu-py38-ubuntu20.04-sagemaker
+make pull-image
 ```
+
+This pulls `public.ecr.aws/deep-learning-containers/pytorch-inference:2.5.1-cpu-py311-ubuntu22.04-sagemaker` and tags it as `763104351884.dkr.ecr.eu-central-1.amazonaws.com/pytorch-inference:2.5.1-cpu-py311-ubuntu22.04-sagemaker`, the image the model uses.
 
 ### LocalStack
 
@@ -72,20 +75,22 @@ make start
 
 ## Instructions
 
-First, we install the dependencies for the Web application in the `web` directory:
-```
-(cd web; npm install)
+Install the dependencies (lstk, boto3 and the web application's packages):
+
+```bash
+source .venv/bin/activate
+make install
 ```
 
-You can then create the AWS infrastructure on LocalStack by running the `deploy/deploy_app.py` script (make sure to have the virtual environment activated):
-```
-source .venv/bin/activate
-python deploy/deploy_app.py
+You can then create the AWS infrastructure on LocalStack by running the `deploy/deploy_app.py` script:
+
+```bash
+make deploy
 ```
 
 This script will create the SageMaker endpoint with the model, which it first uploads to a bucket.
 The script will also create a lambda function that will be used to invoke the endpoint.
-Finally, the script will build the web application and then create a s3 website to host it.
+Finally, the script will build the web application with the function URL and then create a s3 website to host it.
 
 ### Using the application
 
@@ -103,8 +108,18 @@ After a few moments the resulting prediction should be displayed in the box to t
 To switch to a serverless SageMaker endpoint you can also execute the deployment script with the additional `-s` or `--serverless` flag:
 
 ```bash
-python deploy/deploy_app.py --serverless
+make deploy DEPLOY_ARGS=--serverless
 ```
+
+## Testing
+
+`make test` waits for the endpoint to be `InService`, then predicts the digits in `tests/fixtures` (0, 3 and 5, drawn as 28x28 images like the web app sends them):
+
+* by invoking the SageMaker endpoint directly
+* through the Lambda function URL that the web app calls
+* and checks the S3 website serves the web app, built with the function URL
+
+The GitHub Actions workflow runs this for both the instance and the serverless endpoint.
 
 ## License
 

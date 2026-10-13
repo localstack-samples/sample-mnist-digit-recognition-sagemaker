@@ -1,6 +1,7 @@
 import argparse
 import json
 import io
+import os
 import zipfile
 import subprocess
 import boto3
@@ -13,12 +14,14 @@ parser.add_argument('-s', '--serverless', action='store_true')
 
 # aws related
 REGION = "eu-central-1"
-ENDPOINT_URL = "http://localhost:4566"
+ENDPOINT_URL = os.environ.get("AWS_ENDPOINT_URL", "http://localhost:4566")
 
 AWS_CONFIG = {"region_name": REGION, "endpoint_url": ENDPOINT_URL}
 
 # sagemaker config
-SAGEMAKER_CONTAINER_IMAGE_URI = "763104351884.dkr.ecr.eu-central-1.amazonaws.com/pytorch-inference:1.10.2-cpu-py38-ubuntu20.04-sagemaker"
+# AWS Deep Learning Container for PyTorch inference, also published on ECR Public as
+# public.ecr.aws/deep-learning-containers/pytorch-inference:2.5.1-cpu-py311-ubuntu22.04-sagemaker
+SAGEMAKER_CONTAINER_IMAGE_URI = "763104351884.dkr.ecr.eu-central-1.amazonaws.com/pytorch-inference:2.5.1-cpu-py311-ubuntu22.04-sagemaker"
 MODEL_BUCKET_NAME = "mnist-model-bucket"
 MNIST_MODEL_LOCATION = "ml/results/zip/model.tar.gz"
 MNIST_MODEL_KEY = "model.tar.gz"
@@ -145,7 +148,7 @@ def create_lambda():
     # Create the Lambda function
     response = lambda_client.create_function(
         FunctionName=LAMBDA_NAME,
-        Runtime="python3.9",
+        Runtime="python3.12",
         Role="arn:aws:iam::000000000000:role/lambda-role",
         Handler="index.lambda_handler",
         Code={"ZipFile": zip_content},
@@ -172,13 +175,14 @@ def create_lambda():
 
 
 def build_webapp(lambdaUrl: str):
-    for env in ["production", "development"]:
-        f = open(f"web/.env.{env}", "w")
-        f.write(f"REACT_APP_LAMBDA_URL={lambdaUrl}")
-        f.close()
-
-    # build web app
-    subprocess.run("npm run build", cwd="./web", shell=True)
+    # build web app, passing the function URL through the environment
+    subprocess.run(
+        "npm run build",
+        cwd="./web",
+        shell=True,
+        check=True,
+        env={**os.environ, "REACT_APP_LAMBDA_URL": lambdaUrl},
+    )
 
 
 def host_website():
@@ -205,7 +209,7 @@ def host_website():
     s3.put_bucket_policy(Bucket=WEBSITE_BUCKET_NAME, Policy=json.dumps(policy))
 
     # Upload the website files to the bucket
-    subprocess.run(f"lstk aws s3 sync web/build s3://{WEBSITE_BUCKET_NAME}", shell=True)
+    subprocess.run(f"lstk aws s3 sync web/build s3://{WEBSITE_BUCKET_NAME}", shell=True, check=True)
 
     # Enable static website hosting for the bucket
     s3.put_bucket_website(

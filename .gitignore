@@ -3,3 +3,4 @@ files
 cdk
 .DS_STORE
 assets/video.mov
+__pycache__
