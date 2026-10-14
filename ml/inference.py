@@ -1,14 +1,14 @@
 
-import torch
+import os
 import json
 import numpy as np
+import torch
 
 
 def output_fn(prediction_output, accept):
-    torch.argmax(prediction_output, dim=1).item()
     number = torch.argmax(prediction_output, dim=1).item()
     print("returning response: ", number)
-    return number
+    return str(number)
 
 def predict_fn(input_data, model):
     tensor = torch.tensor(input_data)
@@ -31,6 +31,6 @@ def input_fn(input_data, content_type):
 
 def model_fn(model_dir):
     print("model_dir: ", model_dir)
-    model = torch.jit.load("model.pt")
+    model = torch.jit.load(os.path.join(model_dir, "model.pt"))
     return model
 

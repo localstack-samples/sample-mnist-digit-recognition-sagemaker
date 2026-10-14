@@ -1,0 +1,78 @@
+name: Deploy on LocalStack
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Predict digits (${{ matrix.endpoint }} endpoint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - endpoint: instance
+            deploy-args: ''
+          - endpoint: serverless
+            deploy-args: '--serverless'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          npm install -g @localstack/lstk
+          lstk setup aws --force --non-interactive
+          make install
+
+      # Anonymous ECR Public pulls are rate limited per IP, which runners share
+      - name: Pull the PyTorch inference image
+        run: |
+          for attempt in 1 2 3 4 5; do
+            make pull-image && exit 0
+            echo "Pull failed, retrying in 60s"
+            sleep 60
+          done
+          exit 1
+
+      - name: Start LocalStack
+        env:
+          LOCALSTACK_AUTH_TOKEN: ${{ secrets.LOCALSTACK_AUTH_TOKEN }}
+        run: lstk start
+
+      - name: Deploy the application
+        run: make deploy DEPLOY_ARGS='${{ matrix.deploy-args }}'
+
+      - name: Run tests
+        run: make test
+
+      - name: Show LocalStack logs
+        if: failure()
+        run: |
+          docker ps -a
+          lstk logs | tail -300
+          for c in $(docker ps -a --format '{{.Names}}' | grep -v '^localstack-aws$'); do
+            echo "=== $c"; docker logs --tail 80 "$c" 2>&1 || true
+          done
